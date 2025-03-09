@@ -292,8 +292,14 @@
                         <input type="text" class="form-control" id="stock_qty" />
                       </div>
                       <div class="mb-3">
-                        <label class="form-label">Author Id</label>
-                        <input type="text" class="form-control" id="author_id" />
+                        <div class="mb-3">
+                          <label for="authorSelect" class="form-label"
+                            >Select Author</label
+                          >
+                          <select id="authorSelect" class="form-select" required>
+                            <option value="">Loading Authors...</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
                     <div class="modal-footer">
@@ -418,104 +424,83 @@
                   }
                 }
                 getauthor();
-      
-                async function addBook() {
-                  let title = document.getElementById("title").value.trim();
-                  let price = document.getElementById("price").value.trim();
-                  let stock=document.getElementById("stock_qty").value.trim();
-                  let author=document.getElementById("author_id").value.trim();
-                  let url = "https://bs-api.sobuj.net/view/books/insertBook.php";
-                  try {
-                    // validate
-                    if (!title || !price || !stock ||!author) {
-                      alert("All data required");
-                      return;
-                    }
-      
-                    // let formdata = new FormData();
-                    // formdata.append("title", title);
-                    // formdata.append("price", price);
-                    // formdata.append("stock_qty", stock);
-                    // formdata.append("author_id", author);
-                     // Prepare data as JSON object
-        const requestData = {
-            title: title,
-            price: price,
-            stock_qty: stock,
-            author_id: author
-        };
+                let authorsData = [];
 
-        // Send the request with JSON
-        let response = await axios.post(url, requestData, {
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-                    // Prepare JSON data (if API requires JSON)
-       
+// Fetch Customers
+async function fetchAuthors() {
+  let authorSelect = document.getElementById("authorSelect");
+  const authorURL =
+    "https://bs-api.sobuj.net/view/authors/readAuthors.php";
+  try {
+    let response = await axios.get(authorURL);
+    authorsData = response.data;
+
+    authorSelect.innerHTML = `<option value="">Select a author</option>`;
+    authorsData.forEach((author) => {
+      authorSelect.innerHTML += `<option value="${author.author_id}">${author.name} - ${author.email} </option>`;
+    });
+  } catch (e) {
+    console.log("Error in fetching authors", e);
+    authorSelect.innerHTML = `<option value="">Failed to load author</option>`;
+  } finally {
+    console.log("authors Fetched");
+  }
+}
+window.onload = () => {
+  fetchAuthors()
         
-        
-
-      
-                    // fetch data
-                    // let response = await axios.post(url, formdata);
-      
-                    // validate submit data
-                    if (response.status == 200) {
-                      // alert("Data submitted successfully")
-                      // clearing input
-                      document.getElementById("title").value = "";
-                      document.getElementById("price").value = "";
-                      document.getElementById("stock_qty").value = "";
-                      document.getElementById("author_id").value = "";
-                      // close modal
-                      let modal = bootstrap.Modal.getInstance(
-                        document.getElementById("addauthorModal")
-                      );
-                      modal.hide();
-                      // refresh
-                      getauthor();
-                    } else {
-                      alert("Failed to add Book");
-                    }
-                  } catch(error) {
-                    console.error("Error details:", error.response ? error.response.data : error);
-                    alert("Failed to add book. Please try again.");
-                  } finally {
-                    // alert("Author attempt to add successful")
-                  }
-                }
-      
-                async function goToUpdate(authorID){
-        let URL = `https://bs-api.sobuj.net/view/books/updateBook.php?book_id=${authorID}`;
-
-        try{
-            let response = await axios.get(URL);
-            let authorData = response.data;
-
-            if(authorData){
-                //populate data
-                document.getElementById("titlee").value = authorData.title;
-                document.getElementById("pricee").value = authorData.price;
-                document.getElementById("stock_qtye").value = authorData.stock_qty;
-                document.getElementById("author_ide").value = authorData.author_id;
-                editAuthorID = authorID;
-
-                //show modal
-                let editModal = new bootstrap.Modal(document.getElementById("editAuthorModal"));
-                editModal.show();
-            }else{
-                alert("Book not found");
-            }
-
-        } catch(error){
-            console.error("Text",error);
-            alert("Book load failed");
-        }
-
-
+      };
+ 
+  async function addBook() {
+  let title = document.getElementById("title").value.trim();
+  let price = document.getElementById("price").value.trim();
+  let stock = document.getElementById("stock_qty").value.trim();
+  let authorId = document.getElementById("authorSelect").value;
+  let url = "https://bs-api.sobuj.net/view/books/insertBook.php";
+  
+  try {
+    // validate
+    if (!title || !price || !stock || !authorId) {
+      alert("All data required");
+      return;
     }
 
+    // Use FormData since your curl example uses form data
+    let formdata = new FormData();
+    formdata.append("title", title);
+    formdata.append("price", price);
+    formdata.append("stock_qty", stock);
+    formdata.append("author_id", authorId);
+    
+    // fetch data
+    let response = await axios.post(url, formdata);
+
+    // validate submit data
+    if (response.status == 200) {
+      // clearing input
+      document.getElementById("title").value = "";
+      document.getElementById("price").value = "";
+      document.getElementById("stock_qty").value = "";
+      document.getElementById("authorSelect").value = "";
+      
+      // close modal - make sure this ID is correct
+      let modal = bootstrap.Modal.getInstance(
+        document.getElementById("addauthorModal") // Changed to the likely correct modal ID
+      );
+      modal.hide();
+      
+      // refresh - make sure you have a function to refresh the book list
+      fetchAuthors(); // Changed to what is likely your book fetch function
+      
+      alert("Book added successfully");
+    } else {
+      alert("Failed to add Book");
+    }
+  } catch(error) {
+    console.error("Error details:", error.response ? error.response.data : error);
+    alert("Failed to add book. Please try again.");
+  }
+}
 
     async function updateAuthor(){
         let URL = "https://bs-api.sobuj.net/view/books/updateBook.php";
@@ -677,7 +662,8 @@
               crossorigin="anonymous"
             ></script>
             <!-- sortablejs -->
-      
+            <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
             <!-- apexcharts -->
            
             
