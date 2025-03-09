@@ -240,6 +240,7 @@
                         <th>ID</th>
                         <th>Title</th>
                         <th>Price</th>
+                        <th>stock_qty</th>
                         <th>Update</th>
                         <th>Delete</th>
                       </thead>
@@ -332,23 +333,28 @@
                       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label">Title</label>
-                            <input type="text" class="form-control" id="titlee">
-                        </div>
-            
-                        <div class="mb-3">
-                            <label class="form-label">Price</label>
-                            <input type="email" class="form-control" id="pricee">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Stock qty</label>
-                            <input type="email" class="form-control" id="stock_qtye">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Author Id</label>
-                            <input type="email" class="form-control" id="author_ide">
-                        </div>
+                      <div class="mb-3">
+                        <label class="form-label">Book ID</label>
+                        <input type="text" class="form-control" id="book_ide" disabled>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Title</label>
+                        <input type="text" class="form-control" id="titlee">
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Price</label>
+                        <input type="number" class="form-control" id="pricee">
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Stock qty</label>
+                        <input type="number" class="form-control" id="stock_qtye">
+                      </div>
+                      <div class="mb-3">
+                        <label for="authorSelecte" class="form-label">Select Author</label>
+                        <select id="authorSelecte" class="form-select" required>
+                          <option value="">Loading Authors...</option>
+                        </select>
+                      </div>
                     </div>
                     <div class="modal-footer">
                       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -390,7 +396,7 @@
                     data.innerHTML = "";
       
                     if (!authors.length) {
-                      data.innerHTML = "<tr><td colspan='5'>No data found</td></tr>";
+                      data.innerHTML = "<tr><td colspan='6'>No data found</td></tr>";
                       return;
                     }
                     authors.forEach((author) => {
@@ -398,6 +404,8 @@
                       row.innerHTML = `<td>${author["book_id"]}</td>
                 <td>${author["title"]}</td>
                 <td>${author["price"]}</td>
+                <td>${author["stock_qty"]}</td>
+                
                 <td> <button class="btn btn-success update-btn" data-id="${author["book_id"]}">Update </button></td>
                 <td> <button class="btn btn-danger delete-btn" data-id="${author["book_id"]}">Delete </button></td>`;
                       data.appendChild(row);
@@ -418,7 +426,7 @@
                     console.error("Error for authors", error);
       
                     data.innerHTML =
-                      "<tr><td colspan='5'>Failed to load data</td></tr>";
+                      "<tr><td colspan='6'>Failed to load data</td></tr>";
                   } finally {
                     console.log("Author fetch completed");
                   }
@@ -427,23 +435,52 @@
                 let authorsData = [];
 
 // Fetch Customers
+// async function fetchAuthors() {
+//   let authorSelect = document.getElementById("authorSelect");
+//   const authorURL =
+//     "https://bs-api.sobuj.net/view/authors/readAuthors.php";
+//   try {
+//     let response = await axios.get(authorURL);
+//     authorsData = response.data;
+
+//     authorSelect.innerHTML = `<option value="">Select a author</option>`;
+//     authorsData.forEach((author) => {
+//       authorSelect.innerHTML += `<option value="${author.author_id}">${author.name} - ${author.email} </option>`;
+//     });
+//   } catch (e) {
+//     console.log("Error in fetching authors", e);
+//     authorSelect.innerHTML = `<option value="">Failed to load author</option>`;
+//   } finally {
+//     console.log("authors Fetched");
+//   }
+// }
+
 async function fetchAuthors() {
   let authorSelect = document.getElementById("authorSelect");
-  const authorURL =
-    "https://bs-api.sobuj.net/view/authors/readAuthors.php";
+  let authorSelecte = document.getElementById("authorSelecte");
+  const authorURL = "https://bs-api.sobuj.net/view/authors/readAuthors.php";
+  
   try {
     let response = await axios.get(authorURL);
     authorsData = response.data;
 
-    authorSelect.innerHTML = `<option value="">Select a author</option>`;
-    authorsData.forEach((author) => {
-      authorSelect.innerHTML += `<option value="${author.author_id}">${author.name} - ${author.email} </option>`;
-    });
+    // Base HTML for options
+    const optionsHTML = `<option value="">Select an author</option>` + 
+      authorsData.map(author => 
+        `<option value="${author.author_id}">${author.name} - ${author.email}</option>`
+      ).join('');
+    
+    // Update both dropdowns if they exist
+    if (authorSelect) authorSelect.innerHTML = optionsHTML;
+    if (authorSelecte) authorSelecte.innerHTML = optionsHTML;
+    
   } catch (e) {
     console.log("Error in fetching authors", e);
-    authorSelect.innerHTML = `<option value="">Failed to load author</option>`;
+    const errorHTML = `<option value="">Failed to load author</option>`;
+    if (authorSelect) authorSelect.innerHTML = errorHTML;
+    if (authorSelecte) authorSelecte.innerHTML = errorHTML;
   } finally {
-    console.log("authors Fetched");
+    console.log("Authors fetched");
   }
 }
 window.onload = () => {
@@ -490,7 +527,7 @@ window.onload = () => {
       modal.hide();
       
       // refresh - make sure you have a function to refresh the book list
-      fetchAuthors(); // Changed to what is likely your book fetch function
+      getauthor(); // Changed to what is likely your book fetch function
       
       alert("Book added successfully");
     } else {
@@ -502,12 +539,120 @@ window.onload = () => {
   }
 }
 
+// async function goToUpdate(authorID){
+//         let URL = `https://bs-api.sobuj.net/view/books/updateBook.php?book_id=${authorID}`;
+
+//         try{
+//             let response = await axios.get(URL);
+//             let authorData = response.data;
+
+//             if(authorData){
+//                 //populate data
+//                 document.getElementById("book_ide").value = authorData.book_id;
+//                 document.getElementById("titlee").value = authorData.title;
+//                 document.getElementById("pricee").value = authorData.price;
+//                 document.getElementById("stock_qtye").value = authorData.stock_qty;
+//                 document.getElementById("authorSelecte").value = authorData.author_id;
+//                 editAuthorID = authorID;
+
+//                 //show modal
+//                 let editModal = new bootstrap.Modal(document.getElementById("editAuthorModal"));
+//                 editModal.show();
+//             }else{
+//                 alert("Author not found");
+//             }
+
+//         } catch(error){
+//             console.error("Text",error);
+//             alert("Author load failed");
+//         }
+
+
+//     }
+async function goToUpdate(bookID) {
+    console.log("Starting goToUpdate with bookID:", bookID);
+    let URL = `https://bs-api.sobuj.net/view/books/getBookById.php?book_id=${bookID}`;
+    console.log("Using URL:", URL);
+
+    try {
+        // Log before API call
+        console.log("Making API request...");
+        let response = await axios.get(URL);
+        console.log("Full API response:", response);
+        let bookData = response.data;
+        console.log("Book data extracted:", bookData);
+
+        if (bookData) {
+            // Check each field individually
+            console.log("book_id value:", bookData.book_id);
+            console.log("title value:", bookData.title);
+            console.log("price value:", bookData.price);
+            console.log("stock_qty value:", bookData.stock_qty);
+            console.log("author_id value:", bookData.author_id);
+
+            // Check if elements exist before setting values
+            const bookIdElement = document.getElementById("book_ide");
+            console.log("book_ide element exists:", !!bookIdElement);
+            if (bookIdElement) bookIdElement.value = bookData.book_id;
+
+            const titleElement = document.getElementById("titlee");
+            console.log("titlee element exists:", !!titleElement);
+            if (titleElement) titleElement.value = bookData.title;
+
+            const priceElement = document.getElementById("pricee");
+            console.log("pricee element exists:", !!priceElement);
+            if (priceElement) priceElement.value = bookData.price;
+
+            const stockElement = document.getElementById("stock_qtye");
+            console.log("stock_qtye element exists:", !!stockElement);
+            if (stockElement) stockElement.value = bookData.stock_qty;
+
+            // Check for both possible author select IDs
+            const authorSelectE = document.getElementById("authorSelecte");
+            const authorSelect = document.getElementById("authorSelect");
+            console.log("authorSelecte element exists:", !!authorSelectE);
+            console.log("authorSelect element exists:", !!authorSelect);
+            
+            // Try to set value on whichever exists
+            if (authorSelectE) {
+                console.log("Setting value on authorSelecte");
+                authorSelectE.value = bookData.author_id;
+            } else if (authorSelect) {
+                console.log("Setting value on authorSelect");
+                authorSelect.value = bookData.author_id;
+                
+                // Debug why it might not be setting correctly
+                console.log("Available options in authorSelect:");
+                Array.from(authorSelect.options).forEach(option => {
+                    console.log(`Option value: ${option.value}, text: ${option.text}`);
+                });
+            } else {
+                console.error("No author select element found!");
+            }
+
+            // Show the modal
+            console.log("Attempting to show modal");
+            let editModal = new bootstrap.Modal(document.getElementById("editAuthorModal"));
+            editModal.show();
+            console.log("Modal shown");
+        } else {
+            console.warn("Book data is empty or null");
+            alert("Book not found");
+        }
+    } catch (error) {
+        console.error("Error in goToUpdate:", error);
+        alert("Failed to load book data");
+    }
+}
+
+
     async function updateAuthor(){
         let URL = "https://bs-api.sobuj.net/view/books/updateBook.php";
+        let book_id= document.getElementById("book_ide").value
         let title = document.getElementById("titlee").value.trim();
         let price = document.getElementById("pricee").value.trim();
         let quantity=document.getElementById("stock_qtye").value.trim()
-        let author_id= document.getElementById("author_ide").value.trim()
+        let author_id= document.getElementById("authorSelecte").value
         try{
             //Validate
             if(!title || !price || !quantity || !author_id ){
@@ -517,11 +662,11 @@ window.onload = () => {
 
             //Append Data
             let formData = new FormData();
-            formData.append("author_id",editAuthorID);
-            formData.append("name",title);
-            formData.append("email",price);
-            formData.append("email",quantity);
-            formData.append("email",author_id);
+            formData.append("book_id",book_id);
+            formData.append("title",title);
+            formData.append("price",price);
+            formData.append("stock_qty",quantity);
+            formData.append("author_id",author_id);
 
             //send the request
             let response = await axios.post(URL,formData);
@@ -539,7 +684,7 @@ window.onload = () => {
                 modal.hide();
 
                 //Refresh the list
-                getauthor();
+                fetchAuthors();
             }else{
                 alert("Failed to Update author");
             }
@@ -576,7 +721,7 @@ window.onload = () => {
       
               //Append data
               let formData = new FormData();
-              formData.append("author_id",deleteBookID);
+              formData.append("book_id",deleteBookID);
       
               //send the req
               let response = await axios.post(URL,formData);
